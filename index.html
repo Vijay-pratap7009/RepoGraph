@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Visualize GitHub repositories as an interactive connected graph. Explore relationships between repos through shared topics and tags.">
+    <title>RepoGraph — GitHub Repository Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <p class="loading-text">Fetching repositories...</p>
+            <p class="loading-subtext" id="loading-progress"></p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- User Profile Modal -->
+    <div id="profile-modal-overlay" class="profile-modal-overlay hidden">
+        <div class="profile-modal">
+            <button id="profile-close-btn" class="profile-close-btn" aria-label="Close profile">&times;</button>
+            <div class="profile-header">
+                <img id="profile-avatar" class="profile-avatar" src="" alt="User avatar">
+                <div class="profile-identity">
+                    <h2 id="profile-displayname" class="profile-displayname"></h2>
+                    <p id="profile-username" class="profile-handle"></p>
+                </div>
+            </div>
+            <p id="profile-bio" class="profile-bio"></p>
+            <div class="profile-meta">
+                <span id="profile-company" class="profile-meta-item hidden">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span></span>
+                </span>
+                <span id="profile-location" class="profile-meta-item hidden">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span></span>
+                </span>
+                <span id="profile-blog" class="profile-meta-item hidden">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <a href="" target="_blank"></a>
+                </span>
+            </div>
+            <div class="profile-stats-row">
+                <div class="profile-stat">
+                    <span id="profile-repos-count" class="profile-stat-value">0</span>
+                    <span class="profile-stat-label">Repos</span>
+                </div>
+                <div class="profile-stat">
+                    <span id="profile-followers" class="profile-stat-value">0</span>
+                    <span class="profile-stat-label">Followers</span>
+                </div>
+                <div class="profile-stat">
+                    <span id="profile-following" class="profile-stat-value">0</span>
+                    <span class="profile-stat-label">Following</span>
+                </div>
+                <div class="profile-stat">
+                    <span id="profile-total-stars" class="profile-stat-value">0</span>
+                    <span class="profile-stat-label">Stars</span>
+                </div>
+            </div>
+            <div class="profile-section">
+                <h3 class="profile-section-title">Top Languages</h3>
+                <div id="profile-languages" class="profile-lang-bars"></div>
+            </div>
+            <div class="profile-section">
+                <h3 class="profile-section-title">Project Stack & Topics</h3>
+                <div id="profile-topics" class="profile-topics"></div>
+            </div>
+            <a id="profile-github-link" class="btn btn-primary profile-github-btn" href="" target="_blank">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.82.58A12 12 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                View on GitHub
+            </a>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header id="app-header" class="app-header">
+        <div class="header-left">
+            <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <circle cx="4" cy="6" r="2"/>
+                <circle cx="20" cy="6" r="2"/>
+                <circle cx="4" cy="18" r="2"/>
+                <circle cx="20" cy="18" r="2"/>
+                <line x1="6" y1="7" x2="10" y2="10"/>
+                <line x1="18" y1="7" x2="14" y2="10"/>
+                <line x1="6" y1="17" x2="10" y2="14"/>
+                <line x1="18" y1="17" x2="14" y2="14"/>
+            </svg>
+            <h1 class="app-title">RepoGraph</h1>
+        </div>
+        <div class="header-center">
+            <!-- Graph Search -->
+            <div class="search-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="graph-search-input" class="graph-search-input" placeholder="Search repos... ( / )" autocomplete="off">
+                <div id="search-results" class="search-results hidden"></div>
+            </div>
+        </div>
+        <div class="header-right">
+            <!-- User profile badge -->
+            <button id="user-profile-btn" class="user-profile-btn hidden" title="View user profile">
+                <img id="header-avatar" class="header-avatar" src="" alt="">
+                <span id="header-username" class="header-username"></span>
+            </button>
+            <!-- Toolbar buttons -->
+            <button id="export-png-btn" class="icon-btn" title="Export as PNG (E)" aria-label="Export PNG">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button id="export-data-btn" class="icon-btn" title="Export Data" aria-label="Export Data">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </button>
+            <button id="share-btn" class="icon-btn" title="Copy Share URL" aria-label="Share">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
+            <button id="fullscreen-btn" class="icon-btn" title="Fullscreen (F)" aria-label="Fullscreen">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </button>
+            <button id="shortcuts-btn" class="icon-btn" title="Keyboard Shortcuts (?)" aria-label="Shortcuts">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
+            </button>
+            <button id="dark-mode-toggle" class="icon-btn" title="Toggle Dark Mode (D)" aria-label="Toggle dark mode">
+                <svg class="icon sun-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                <svg class="icon moon-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <!-- Search Section -->
+            <section class="sidebar-section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Explore
+                </h2>
+                <div class="input-group">
+                    <label for="username-input">GitHub Username</label>
+                    <input type="text" id="username-input" placeholder="e.g. torvalds" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label for="api-key-input">API Token <span class="label-hint">(optional)</span></label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="api-key-input" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+                        <button id="toggle-api-key-visibility" class="input-icon-btn" title="Show/Hide Token" aria-label="Toggle token visibility">
+                            <svg class="eye-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button id="fetch-btn" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    Fetch Repos
+                </button>
+            </section>
+
+            <!-- Add Individual Repos Section -->
+            <section class="sidebar-section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Repos
+                </h2>
+                <div class="input-group">
+                    <label for="repo-input">Repo URL or owner/repo</label>
+                    <input type="text" id="repo-input" placeholder="e.g. facebook/react or paste URL" autocomplete="off">
+                </div>
+                <button id="add-repo-btn" class="btn btn-accent">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add to Graph
+                </button>
+                <div id="added-repos-list" class="added-repos-list"></div>
+            </section>
+
+            <!-- Filters Section (hidden until data loads) -->
+            <section id="filters-section" class="sidebar-section hidden">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    Filters
+                </h2>
+                <div class="input-group">
+                    <label for="language-filter">Language</label>
+                    <select id="language-filter">
+                        <option value="all">All Languages</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="stars-min">Stars Range</label>
+                    <div class="range-inputs">
+                        <input type="number" id="stars-min" placeholder="Min" min="0">
+                        <span class="range-separator">—</span>
+                        <input type="number" id="stars-max" placeholder="Max" min="0">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="date-start">Created After</label>
+                    <input type="date" id="date-start">
+                </div>
+                <div class="input-group">
+                    <label for="date-end">Created Before</label>
+                    <input type="date" id="date-end">
+                </div>
+                <button id="apply-filters-btn" class="btn btn-secondary">Apply Filters</button>
+                <button id="clear-filters-btn" class="btn btn-ghost">Clear Filters</button>
+            </section>
+
+            <!-- Stats Section (hidden until data loads) -->
+            <section id="stats-section" class="sidebar-section hidden">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    Stats
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-repos">0</span>
+                        <span class="stat-label">Repos</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-languages">0</span>
+                        <span class="stat-label">Languages</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-connections">0</span>
+                        <span class="stat-label">Connections</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-stars">0</span>
+                        <span class="stat-label">Total Stars</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Legend Section (hidden until data loads) -->
+            <section id="legend-section" class="sidebar-section hidden">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Language Legend
+                </h2>
+                <div id="legend-list" class="legend-list"></div>
+            </section>
+
+            <!-- Bookmarks Section -->
+            <section class="sidebar-section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    Bookmarks
+                </h2>
+                <div id="bookmarks-list" class="bookmarks-list"></div>
+            </section>
+        </aside>
+
+        <!-- Graph Area -->
+        <main id="graph-area" class="graph-area">
+            <!-- Empty state -->
+            <div id="empty-state" class="empty-state">
+                <svg viewBox="0 0 120 120" width="120" height="120" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                    <circle cx="60" cy="60" r="12" stroke-width="2"/>
+                    <circle cx="25" cy="30" r="8"/>
+                    <circle cx="95" cy="30" r="8"/>
+                    <circle cx="25" cy="90" r="8"/>
+                    <circle cx="95" cy="90" r="8"/>
+                    <circle cx="60" cy="15" r="6"/>
+                    <circle cx="60" cy="105" r="6"/>
+                    <line x1="30" y1="34" x2="52" y2="54" opacity="0.5"/>
+                    <line x1="90" y1="34" x2="68" y2="54" opacity="0.5"/>
+                    <line x1="30" y1="86" x2="52" y2="66" opacity="0.5"/>
+                    <line x1="90" y1="86" x2="68" y2="66" opacity="0.5"/>
+                    <line x1="60" y1="21" x2="60" y2="48" opacity="0.5"/>
+                    <line x1="60" y1="99" x2="60" y2="72" opacity="0.5"/>
+                </svg>
+                <h2>Enter a GitHub username</h2>
+                <p>Visualize repositories as a connected graph based on shared topics</p>
+            </div>
+
+            <!-- Graph tooltip (node) -->
+            <div id="tooltip" class="tooltip hidden">
+                <div class="tooltip-header">
+                    <h3 id="tooltip-name"></h3>
+                    <span id="tooltip-language" class="tooltip-badge"></span>
+                </div>
+                <p id="tooltip-description" class="tooltip-desc"></p>
+                <div class="tooltip-stats">
+                    <span id="tooltip-stars">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <span></span>
+                    </span>
+                    <span id="tooltip-forks">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/><line x1="12" y1="12" x2="12" y2="15"/></svg>
+                        <span></span>
+                    </span>
+                </div>
+                <div id="tooltip-topics" class="tooltip-topics"></div>
+                <!-- Connected repos section -->
+                <div id="tooltip-connections" class="tooltip-connections"></div>
+                <p class="tooltip-hint">Click to open on GitHub</p>
+            </div>
+
+            <!-- Edge tooltip (connection) -->
+            <div id="edge-tooltip" class="tooltip edge-tooltip hidden">
+                <div class="edge-tooltip-header">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span class="edge-tooltip-title">Connection</span>
+                </div>
+                <div class="edge-tooltip-repos">
+                    <span id="edge-source" class="edge-repo-name"></span>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" class="edge-arrow"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    <span id="edge-target" class="edge-repo-name"></span>
+                </div>
+                <div class="edge-tooltip-shared-label">Shared Topics:</div>
+                <div id="edge-shared-topics" class="tooltip-topics"></div>
+            </div>
+
+            <!-- SVG will be injected here by D3 -->
+            <svg id="graph-svg"></svg>
+
+            <!-- Minimap -->
+            <div id="minimap" class="minimap">
+                <canvas id="minimap-canvas" width="160" height="120"></canvas>
+            </div>
+
+            <!-- Comparison Panel -->
+            <div id="comparison-panel" class="comparison-panel hidden">
+                <div class="comparison-header">
+                    <h3>Repo Comparison</h3>
+                    <button id="clear-comparison-btn" class="profile-close-btn" title="Close">&times;</button>
+                </div>
+                <div id="comparison-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcuts-modal" class="profile-modal-overlay hidden">
+        <div class="profile-modal shortcuts-modal">
+            <button class="profile-close-btn" onclick="document.getElementById('shortcuts-modal').classList.add('hidden')">&times;</button>
+            <h2 class="shortcuts-title">⌨️ Keyboard Shortcuts</h2>
+            <div class="shortcuts-grid">
+                <div class="shortcut-row"><kbd>/</kbd><span>Focus search</span></div>
+                <div class="shortcut-row"><kbd>F</kbd><span>Toggle fullscreen</span></div>
+                <div class="shortcut-row"><kbd>D</kbd><span>Toggle dark mode</span></div>
+                <div class="shortcut-row"><kbd>E</kbd><span>Export graph as PNG</span></div>
+                <div class="shortcut-row"><kbd>J</kbd><span>Export data as JSON</span></div>
+                <div class="shortcut-row"><kbd>B</kbd><span>Bookmark current view</span></div>
+                <div class="shortcut-row"><kbd>?</kbd><span>Show this help</span></div>
+                <div class="shortcut-row"><kbd>Esc</kbd><span>Close modals</span></div>
+            </div>
+            <p class="shortcuts-hint">Right-click a node to add it to comparison</p>
+        </div>
+    </div>
+
+    <!-- Data Export Dropdown -->
+    <div id="export-dropdown" class="export-dropdown hidden">
+        <button id="export-json-btn" class="export-option">📋 Export as JSON</button>
+        <button id="export-csv-btn" class="export-option">📊 Export as CSV</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/features.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
