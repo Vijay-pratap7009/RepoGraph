@@ -23,6 +23,22 @@
     --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
     --graph-bg: #f8f9fb;
+    --graph-bg-image: none;
+    --bg-glass: rgba(255, 255, 255, 0.72);
+    --bg-glass-border: rgba(255, 255, 255, 0.4);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --accent-glow: rgba(99, 102, 241, 0.25);
+    --accent-subtle: rgba(99, 102, 241, 0.08);
+    --border: rgba(15, 23, 42, 0.08);
+    --border-focus: rgba(99, 102, 241, 0.5);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+    --graph-bg: #f8f9fb;
     --link-color: rgba(99, 102, 241, 0.18);
     --link-hover: rgba(99, 102, 241, 0.55);
     --tooltip-bg: rgba(255, 255, 255, 0.95);
@@ -53,6 +69,9 @@ body.dark {
     --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
     --graph-bg: #0d1220;
+    --graph-bg-image: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 70%), 
+                      repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(129, 140, 248, 0.035) 50px, rgba(129, 140, 248, 0.035) 51px), 
+                      repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(129, 140, 248, 0.035) 50px, rgba(129, 140, 248, 0.035) 51px);
     --link-color: rgba(129, 140, 248, 0.15);
     --link-hover: rgba(129, 140, 248, 0.5);
     --tooltip-bg: rgba(21, 27, 46, 0.95);
@@ -68,10 +87,11 @@ html, body {
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg-primary);
+    font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-primary);
+    background-image: var(--graph-bg-image);
     color: var(--text-primary);
-    transition: background var(--transition), color var(--transition);
+    transition: background-color var(--transition), color var(--transition);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -1670,11 +1690,14 @@ body.dark .toast-info {
 /* ----- Graph Node Styles ----- */
 .node-circle {
     cursor: pointer;
-    transition: filter 0.2s ease;
+    transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.2s ease, stroke 0.2s ease;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.7));
 }
 
 .node-circle:hover {
-    filter: brightness(1.2) drop-shadow(0 0 8px var(--accent-glow));
+    filter: brightness(1.3) drop-shadow(0 0 12px var(--accent));
+    stroke: #fff;
+    stroke-width: 2px !important;
 }
 
 .node-label {
@@ -1700,23 +1723,37 @@ body.dark .toast-info {
 
 /* Selected Node Glow */
 .node-selected {
-    animation: nodeGlow 2s ease-in-out infinite alternate;
+    animation: nodeGlowOrb 2s ease-in-out infinite alternate;
 }
 
-@keyframes nodeGlow {
+@keyframes nodeGlowOrb {
     0% {
         stroke-width: 2px;
-        stroke: var(--accent);
-        filter: drop-shadow(0 0 2px var(--accent));
+        stroke: #fff;
+        filter: brightness(1.2) drop-shadow(0 0 8px var(--accent));
     }
     100% {
         stroke-width: 4px;
         stroke: var(--accent);
-        filter: drop-shadow(0 0 10px var(--accent-glow));
+        filter: brightness(1.4) drop-shadow(0 0 20px var(--accent-glow));
     }
 }
 
 /* ----- Animations ----- */
+.fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUpAnim 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--delay, 1) * 0.1s);
+}
+
+@keyframes fadeUpAnim {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

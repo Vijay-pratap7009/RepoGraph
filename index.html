@@ -7,7 +7,7 @@
     <title>RepoGraph — GitHub Repository Visualizer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 </head>
@@ -84,7 +84,7 @@
     </div>
 
     <!-- Header -->
-    <header id="app-header" class="app-header">
+    <header id="app-header" class="app-header fade-up" style="--delay: 1">
         <div class="header-left">
             <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
@@ -149,7 +149,7 @@
     <!-- Main Layout -->
     <div class="app-layout">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar">
+        <aside id="sidebar" class="sidebar fade-up" style="--delay: 2">
             <!-- Search Section -->
             <section class="sidebar-section">
                 <h2 class="section-title">
@@ -336,7 +336,7 @@
             </div>
 
             <!-- Chat Widget -->
-            <div id="chat-widget" class="chat-widget collapsed">
+            <div id="chat-widget" class="chat-widget collapsed fade-up" style="--delay: 5">
                 <div class="chat-header">
                     <h3><span class="chat-icon">💬</span> Graph Chat</h3>
                     <div class="chat-controls">
@@ -362,7 +362,7 @@
             </div>
 
             <!-- Graph Overlay Legend (MIROFISH style) -->
-            <div id="graph-overlay-legend" class="graph-overlay-legend hidden">
+            <div id="graph-overlay-legend" class="graph-overlay-legend hidden fade-up" style="--delay: 3">
                 <div class="overlay-legend-title">Entity Types</div>
                 <div id="overlay-legend-items" class="overlay-legend-items"></div>
             </div>
