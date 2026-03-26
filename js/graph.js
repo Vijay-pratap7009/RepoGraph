@@ -129,33 +129,37 @@ const RepoGraph = (() => {
         const initialTransform = d3.zoomIdentity.translate(width / 2, height / 2);
         svg.call(zoom.transform, initialTransform);
 
-        // Force simulation
+        // Force simulation (Denser MIROFISH style)
         simulation = d3.forceSimulation(graphData.nodes)
             .force('link', d3.forceLink(graphData.edges)
                 .id(d => d.id)
-                .distance(d => Math.max(60, 160 - d.weight * 30))
-                .strength(d => Math.min(0.8, 0.1 + d.weight * 0.15))
+                .distance(d => Math.max(20, 80 - d.weight * 15)) // Tighter distances
+                .strength(d => Math.min(1.2, 0.3 + d.weight * 0.2)) // Stronger links
             )
             .force('charge', d3.forceManyBody()
-                .strength(d => -Math.max(80, d.radius * 8))
-                .distanceMax(400)
+                .strength(d => -Math.max(40, d.radius * 5)) // Reduced repulsion for denser packing
+                .distanceMax(250)
             )
-            .force('center', d3.forceCenter(0, 0))
-            .force('collide', d3.forceCollide().radius(d => d.radius + 6).strength(0.7))
-            .force('x', d3.forceX(0).strength(0.03))
-            .force('y', d3.forceY(0).strength(0.03))
-            .alphaDecay(0.02)
-            .velocityDecay(0.3);
+            .force('center', d3.forceCenter(0, 0).strength(0.05)) // Pull towards center
+            .force('collide', d3.forceCollide().radius(d => d.radius + 3).strength(0.9)) // Tighter collision
+            .force('x', d3.forceX(0).strength(0.08)) // Stronger gravity X
+            .force('y', d3.forceY(0).strength(0.08)) // Stronger gravity Y
+            .alphaDecay(0.015) // Simulate longer to settle perfectly
+            .velocityDecay(0.4); // Higher drag for stability
 
-        // Draw visible edges
+        // Draw visible edges (Colored MIROFISH style)
+        const isDark = document.body.classList.contains('dark');
+        const defaultStroke = isDark ? '#ff4785' : '#ff2a5f'; // Hot pink / red
+
         const links = g.append('g')
             .attr('class', 'links')
             .selectAll('line')
             .data(graphData.edges)
             .join('line')
             .attr('class', 'link-line')
-            .attr('stroke-width', d => Math.min(4, 0.8 + d.weight * 0.8))
-            .attr('stroke-opacity', d => Math.min(0.6, 0.15 + d.weight * 0.1));
+            .attr('stroke', defaultStroke)
+            .attr('stroke-width', d => Math.min(3, 0.6 + d.weight * 0.6))
+            .attr('stroke-opacity', d => Math.min(0.45, 0.1 + d.weight * 0.08));
 
         // Invisible wider edge hit areas (for easier hover)
         const linkHitAreas = g.append('g')
@@ -256,14 +260,28 @@ const RepoGraph = (() => {
                 hideTooltip();
             })
             .on('click', (event, d) => {
+                // Select node to open details panel
+                event.stopPropagation();
+                selectNode(d, nodeGroups, links);
+                window.dispatchEvent(new CustomEvent('node-selected', { detail: d.repo }));
+            })
+            .on('dblclick', (event, d) => {
+                // Double click to open GitHub URL
                 window.open(d.repo.url, '_blank');
             })
             .on('contextmenu', (event, d) => {
                 event.preventDefault();
+                event.stopPropagation();
                 if (typeof Features !== 'undefined') {
                     Features.toggleComparisonSelect(d.id);
                 }
             });
+
+        // Click on background clears selection
+        svg.on('click', () => {
+            clearHighlight();
+            window.dispatchEvent(new CustomEvent('node-selected', { detail: null }));
+        });
 
         // Simulation tick
         simulation.on('tick', () => {
@@ -324,6 +342,23 @@ const RepoGraph = (() => {
                 const targetId = typeof d.target === 'object' ? d.target.id : d.target;
                 return sourceId === hoveredNode.id || targetId === hoveredNode.id;
             });
+    }
+
+    /**
+     * persistent node selection formatting
+     */
+    let selectedNodeId = null;
+    function selectNode(node, nodeGroups, links) {
+        selectedNodeId = node.id;
+        
+        // Remove glow from others
+        d3.selectAll('.node-circle').classed('node-selected', false);
+        
+        // Add glow to selected
+        nodeGroups.filter(d => d.id === node.id).select('.node-circle').classed('node-selected', true);
+        
+        // Keep the hover state alive for connections
+        handleNodeHover(node, nodeGroups, links, true);
     }
 
     /**
@@ -563,8 +598,19 @@ const RepoGraph = (() => {
      * Clear all highlights
      */
     function clearHighlight() {
+        selectedNodeId = null;
         d3.selectAll('.node-group').classed('node-dimmed', false);
         d3.selectAll('.link-line').classed('link-dimmed', false).classed('link-highlighted', false);
+        d3.selectAll('.node-circle').classed('node-selected', false);
+    }
+
+    /**
+     * Trigger a relayout by adding \"heat\" to the simulation
+     */
+    function relayout() {
+        if (simulation) {
+            simulation.alpha(1).restart();
+        }
     }
 
     /**
@@ -584,6 +630,6 @@ const RepoGraph = (() => {
 
     return {
         render, destroy, getLanguageMap, getLanguageColor, getEdgeCount,
-        buildGraphData, zoomToNode, clearHighlight, getGraphNodes
+        buildGraphData, zoomToNode, clearHighlight, getGraphNodes, relayout
     };
 })();
