@@ -353,53 +353,7 @@ const Features = (() => {
         });
     }
 
-    // ==================== MINIMAP ====================
-    function initMinimap() {
-        // Minimap will be rendered by graph.js when it has data
-    }
 
-    function updateMinimap(nodes, width, height) {
-        const canvas = document.getElementById('minimap-canvas');
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        const mw = canvas.width;
-        const mh = canvas.height;
-
-        ctx.clearRect(0, 0, mw, mh);
-
-        if (!nodes || nodes.length === 0) return;
-
-        // Find bounds
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        nodes.forEach(n => {
-            if (n.x < minX) minX = n.x;
-            if (n.x > maxX) maxX = n.x;
-            if (n.y < minY) minY = n.y;
-            if (n.y > maxY) maxY = n.y;
-        });
-
-        const padding = 20;
-        const rangeX = (maxX - minX) || 1;
-        const rangeY = (maxY - minY) || 1;
-
-        const scaleX = (mw - padding * 2) / rangeX;
-        const scaleY = (mh - padding * 2) / rangeY;
-        const scale = Math.min(scaleX, scaleY);
-
-        const offsetX = (mw - rangeX * scale) / 2;
-        const offsetY = (mh - rangeY * scale) / 2;
-
-        // Draw dots
-        nodes.forEach(n => {
-            const x = (n.x - minX) * scale + offsetX;
-            const y = (n.y - minY) * scale + offsetY;
-            ctx.beginPath();
-            ctx.arc(x, y, Math.max(2, n.radius * scale * 0.3), 0, Math.PI * 2);
-            ctx.fillStyle = n.color;
-            ctx.fill();
-        });
-    }
 
     // ==================== COMPARISON PANEL ====================
     let selectedForComparison = [];
@@ -504,7 +458,6 @@ const Features = (() => {
         initSearch();
         initFullscreen();
         initKeyboardShortcuts();
-        initMinimap();
         renderBookmarks();
     }
 
@@ -517,7 +470,6 @@ const Features = (() => {
         bookmarkCurrentView,
         renderBookmarks,
         generateShareURL,
-        updateMinimap,
         toggleComparisonSelect,
         clearComparison,
         getSelectedForComparison,

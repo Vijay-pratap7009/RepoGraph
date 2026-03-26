@@ -117,15 +117,15 @@ const RepoGraph = (() => {
         // Zoom group
         g = svg.append('g');
 
-        const zoom = d3.zoom()
-            .scaleExtent([0.1, 6])
+        zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
             .on('zoom', (event) => {
                 g.attr('transform', event.transform);
             });
 
         svg.call(zoom);
 
-        // Center initial view
+        // Initial setup
         const initialTransform = d3.zoomIdentity.translate(width / 2, height / 2);
         svg.call(zoom.transform, initialTransform);
 
@@ -283,6 +283,7 @@ const RepoGraph = (() => {
             window.dispatchEvent(new CustomEvent('node-selected', { detail: null }));
         });
 
+        let tickCount = 0;
         // Simulation tick
         simulation.on('tick', () => {
             links

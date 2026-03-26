@@ -21,6 +21,14 @@
     const applyFiltersBtn = document.getElementById('apply-filters-btn');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
 
+    // Node Details Panel
+    const nodeDetailsPanel = document.getElementById('node-details-panel');
+    const closeDetailsBtn = document.getElementById('close-details-btn');
+    
+    // Overlay Legend
+    const overlayLegend = document.getElementById('graph-overlay-legend');
+    const overlayLegendItems = document.getElementById('overlay-legend-items');
+
     const userProfileBtn = document.getElementById('user-profile-btn');
     const profileModalOverlay = document.getElementById('profile-modal-overlay');
     const profileCloseBtn = document.getElementById('profile-close-btn');
@@ -53,7 +61,19 @@
         applyFiltersBtn.addEventListener('click', handleApplyFilters);
         clearFiltersBtn.addEventListener('click', handleClearFilters);
 
+        // Node Details
+        closeDetailsBtn.addEventListener('click', () => {
+            nodeDetailsPanel.classList.add('hidden');
+            RepoGraph.clearHighlight();
+        });
 
+        window.addEventListener('node-selected', (e) => {
+            if (e.detail) {
+                showNodeDetails(e.detail);
+            } else {
+                nodeDetailsPanel.classList.add('hidden');
+            }
+        });
 
         // User profile panel
         userProfileBtn.addEventListener('click', openProfileModal);
@@ -63,6 +83,11 @@
         });
 
         // Toolbar buttons
+        document.getElementById('refresh-graph-btn').addEventListener('click', () => {
+            if (window.__allRepos && window.__allRepos.length > 0) {
+                RepoGraph.relayout();
+            }
+        });
         document.getElementById('export-png-btn').addEventListener('click', Features.exportPNG);
         document.getElementById('fullscreen-btn').addEventListener('click', Features.toggleFullscreen);
         document.getElementById('share-btn').addEventListener('click', Features.generateShareURL);
@@ -186,9 +211,11 @@
     function updateLegend(repos) {
         const legendList = document.getElementById('legend-list');
         legendList.innerHTML = '';
+        overlayLegendItems.innerHTML = '';
 
         const langMap = RepoGraph.getLanguageMap(repos);
         langMap.forEach((color, language) => {
+            // Sidebar legend
             const item = document.createElement('div');
             item.className = 'legend-item';
             item.innerHTML = `<span class="legend-dot" style="background:${color}"></span>${language}`;
@@ -197,7 +224,19 @@
                 handleApplyFilters();
             });
             legendList.appendChild(item);
+
+            // Overlay legend
+            const overlayItem = document.createElement('div');
+            overlayItem.className = 'overlay-legend-item';
+            overlayItem.innerHTML = `<span class="overlay-legend-dot" style="background:${color}"></span>${language}`;
+            overlayLegendItems.appendChild(overlayItem);
         });
+
+        if (langMap.size > 0) {
+            overlayLegend.classList.remove('hidden');
+        } else {
+            overlayLegend.classList.add('hidden');
+        }
     }
 
     // --- Filter Handlers ---
@@ -218,7 +257,7 @@
         const isDark = document.body.classList.contains('dark');
         localStorage.setItem('repograph-dark', isDark ? '1' : '0');
 
-        // Re-render graph if data exists (to update CSS-driven colors)
+        // Re-render graph if data exists (to update CSS-driven colors like edges)
         if (allRepos.length > 0) {
             const filters = Filters.getCurrentFilters();
             const filtered = Filters.applyAll(allRepos, filters);
@@ -260,6 +299,49 @@
             toast.style.transition = 'all 0.3s ease';
             setTimeout(() => toast.remove(), 300);
         }, 4000);
+    }
+
+    // --- Node Details Panel ---
+    function showNodeDetails(repo) {
+        document.getElementById('details-name').textContent = repo.name;
+        document.getElementById('details-language').textContent = repo.language;
+        document.getElementById('details-language').style.background = RepoGraph.getLanguageColor(repo.language) + '22';
+        document.getElementById('details-language').style.color = RepoGraph.getLanguageColor(repo.language);
+        
+        // Mock UUID based on ID
+        const fakeUuid = `repo-${repo.id}-${Math.random().toString(16).slice(2,8)}`;
+        document.getElementById('details-uuid').textContent = fakeUuid;
+        
+        const createdDate = new Date(repo.createdAt);
+        document.getElementById('details-created').textContent = createdDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ' + (createdDate.getHours() >= 12 ? 'PM' : 'AM');
+        
+        document.getElementById('details-fullname').textContent = repo.fullName;
+        document.getElementById('details-stars').textContent = repo.stars.toLocaleString();
+        document.getElementById('details-forks').textContent = repo.forks.toLocaleString();
+        document.getElementById('details-size').textContent = repo.size ? repo.size.toLocaleString() : 'N/A';
+        
+        document.getElementById('details-desc').textContent = repo.description || 'No description provided for this repository.';
+        
+        const labelsContainer = document.getElementById('details-labels');
+        labelsContainer.innerHTML = '';
+        
+        // Add language as label
+        const langLabel = document.createElement('span');
+        langLabel.className = 'details-label-tag details-label-entity';
+        langLabel.textContent = 'Entity';
+        labelsContainer.appendChild(langLabel);
+        
+        // Add topics as labels
+        repo.topics.slice(0, 5).forEach(topic => {
+            const tag = document.createElement('span');
+            tag.className = 'details-label-tag details-label-topic';
+            tag.textContent = topic;
+            labelsContainer.appendChild(tag);
+        });
+
+        document.getElementById('details-github-btn').href = repo.url;
+
+        nodeDetailsPanel.classList.remove('hidden');
     }
 
     // --- User Profile ---

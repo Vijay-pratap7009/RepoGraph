@@ -322,18 +322,43 @@
             <!-- SVG will be injected here by D3 -->
             <svg id="graph-svg"></svg>
 
-            <!-- Minimap -->
-            <div id="minimap" class="minimap">
-                <canvas id="minimap-canvas" width="160" height="120"></canvas>
-            </div>
+
 
             <!-- Comparison Panel -->
             <div id="comparison-panel" class="comparison-panel hidden">
                 <div class="comparison-header">
-                    <h3>Repo Comparison</h3>
-                    <button id="clear-comparison-btn" class="profile-close-btn" title="Close">&times;</button>
+                    <h3>Compare Repositories</h3>
+                    <button id="close-comparison-btn" class="icon-btn" title="Close">✕</button>
                 </div>
-                <div id="comparison-content"></div>
+                <div id="comparison-content" class="comparison-content">
+                    <!-- Dynamic grid injected here -->
+                </div>
+            </div>
+
+            <!-- Chat Widget -->
+            <div id="chat-widget" class="chat-widget collapsed">
+                <div class="chat-header">
+                    <h3><span class="chat-icon">💬</span> Graph Chat</h3>
+                    <div class="chat-controls">
+                        <span id="chat-users-count" class="chat-users">1 online</span>
+                        <button id="chat-toggle-btn" class="icon-btn" title="Toggle Chat">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="chat-toggle-icon">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="chat-body" id="chat-messages">
+                    <div class="chat-system-msg">Connecting to server...</div>
+                </div>
+                <div class="chat-footer">
+                    <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off" disabled>
+                    <button id="chat-send-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <!-- Graph Overlay Legend (MIROFISH style) -->
@@ -424,12 +449,17 @@
         <button id="export-csv-btn" class="export-option">📊 Export as CSV</button>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <!-- 3rd Party Libs -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script> <!-- Included for real-time chat -->
+
+    <!-- App Scripts (Dependent order) -->
     <script src="js/api.js"></script>
-    <script src="js/graph.js"></script>
-    <script src="js/filters.js"></script>
     <script src="js/features.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/chat.js"></script> <!-- Real-time chat handler -->
     <script src="js/app.js"></script>
 </body>
 </html>
