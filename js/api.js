@@ -159,53 +159,6 @@ const GitHubAPI = (() => {
     }
 
     /**
-     * Parse a repo input string (URL or owner/repo) into { owner, repo }
-     */
-    function parseRepoInput(input) {
-        input = input.trim();
-
-        // Handle full GitHub URLs
-        // e.g. https://github.com/facebook/react or https://github.com/facebook/react/
-        const urlMatch = input.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
-        if (urlMatch) {
-            return { owner: urlMatch[1], repo: urlMatch[2].replace(/\.git$/, '') };
-        }
-
-        // Handle owner/repo format
-        const slashMatch = input.match(/^([^\/\s]+)\/([^\/\s]+)$/);
-        if (slashMatch) {
-            return { owner: slashMatch[1], repo: slashMatch[2] };
-        }
-
-        return null;
-    }
-
-    /**
-     * Fetch a single repository by owner/name and return enriched repo object
-     */
-    async function fetchSingleRepo(owner, repoName, token) {
-        const url = `${BASE_URL}/repos/${owner}/${repoName}`;
-        const { data: repo } = await apiRequest(url, token);
-        const topics = await fetchRepoTopics(owner, repoName, token);
-
-        return {
-            id: repo.id,
-            name: repo.name,
-            fullName: repo.full_name,
-            description: repo.description || '',
-            url: repo.html_url,
-            language: repo.language || 'Unknown',
-            stars: repo.stargazers_count,
-            forks: repo.forks_count,
-            watchers: repo.watchers_count,
-            topics: topics,
-            createdAt: repo.created_at,
-            updatedAt: repo.updated_at,
-            isFork: repo.fork,
-            size: repo.size,
-        };
-    }
-    /**
      * Fetch GitHub user profile
      */
     async function fetchUserProfile(username, token) {
@@ -227,5 +180,5 @@ const GitHubAPI = (() => {
         };
     }
 
-    return { fetchAllData, fetchSingleRepo, parseRepoInput, fetchUserProfile };
+    return { fetchAllData, fetchUserProfile };
 })();

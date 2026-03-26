@@ -20,9 +20,7 @@
     const legendSection = document.getElementById('legend-section');
     const applyFiltersBtn = document.getElementById('apply-filters-btn');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
-    const repoInput = document.getElementById('repo-input');
-    const addRepoBtn = document.getElementById('add-repo-btn');
-    const addedReposList = document.getElementById('added-repos-list');
+
     const userProfileBtn = document.getElementById('user-profile-btn');
     const profileModalOverlay = document.getElementById('profile-modal-overlay');
     const profileCloseBtn = document.getElementById('profile-close-btn');
@@ -55,11 +53,7 @@
         applyFiltersBtn.addEventListener('click', handleApplyFilters);
         clearFiltersBtn.addEventListener('click', handleClearFilters);
 
-        // Fine-grained repo insertion
-        addRepoBtn.addEventListener('click', handleAddRepo);
-        repoInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleAddRepo();
-        });
+
 
         // User profile panel
         userProfileBtn.addEventListener('click', openProfileModal);
@@ -151,104 +145,7 @@
         }
     }
 
-    // --- Add Individual Repo Handler ---
-    async function handleAddRepo() {
-        const rawInput = repoInput.value.trim();
-        if (!rawInput) {
-            showToast('Enter a repo URL or owner/repo name.', 'error');
-            repoInput.focus();
-            return;
-        }
 
-        const parsed = GitHubAPI.parseRepoInput(rawInput);
-        if (!parsed) {
-            showToast('Invalid format. Use owner/repo or paste a GitHub URL.', 'error');
-            repoInput.focus();
-            return;
-        }
-
-        // Check for duplicates
-        const exists = allRepos.find(r => r.fullName === `${parsed.owner}/${parsed.repo}`);
-        if (exists) {
-            showToast(`${parsed.owner}/${parsed.repo} is already in the graph.`, 'info');
-            repoInput.value = '';
-            return;
-        }
-
-        const token = apiKeyInput.value.trim() || null;
-
-        // Show mini loading on button
-        addRepoBtn.disabled = true;
-        addRepoBtn.innerHTML = '<span class="btn-spinner"></span> Adding...';
-
-        try {
-            const enrichedRepo = await GitHubAPI.fetchSingleRepo(parsed.owner, parsed.repo, token);
-
-            allRepos.push(enrichedRepo);
-            window.__allRepos = allRepos;
-            repoInput.value = '';
-
-            showToast(`Added ${enrichedRepo.fullName} to the graph.`, 'success');
-
-            // Add chip to the added repos list
-            addRepoChip(enrichedRepo);
-
-            // Show sections if first repo
-            filtersSection.classList.remove('hidden');
-            statsSection.classList.remove('hidden');
-            legendSection.classList.remove('hidden');
-
-            // Re-populate filters & re-render
-            Filters.populateLanguageDropdown(allRepos);
-            const filters = Filters.getCurrentFilters();
-            const filtered = Filters.applyAll(allRepos, filters);
-            renderGraph(filtered);
-
-        } catch (error) {
-            showToast(error.message, 'error');
-            console.error('Add repo error:', error);
-        } finally {
-            addRepoBtn.disabled = false;
-            addRepoBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add to Graph';
-        }
-    }
-
-    // --- Repo Chip (removable) ---
-    function addRepoChip(repo) {
-        const chip = document.createElement('div');
-        chip.className = 'repo-chip';
-        chip.dataset.fullName = repo.fullName;
-
-        const langColor = RepoGraph.getLanguageColor(repo.language);
-
-        chip.innerHTML = `
-            <span class="repo-chip-dot" style="background:${langColor}"></span>
-            <span class="repo-chip-name" title="${repo.fullName}">${repo.fullName}</span>
-            <span class="repo-chip-stars">⭐ ${repo.stars}</span>
-            <button class="repo-chip-remove" title="Remove from graph" aria-label="Remove ${repo.name}">&times;</button>
-        `;
-
-        chip.querySelector('.repo-chip-remove').addEventListener('click', () => {
-            allRepos = allRepos.filter(r => r.fullName !== repo.fullName);
-            chip.remove();
-            showToast(`Removed ${repo.fullName} from the graph.`, 'info');
-
-            if (allRepos.length === 0) {
-                RepoGraph.destroy();
-                emptyState.classList.remove('hidden');
-                filtersSection.classList.add('hidden');
-                statsSection.classList.add('hidden');
-                legendSection.classList.add('hidden');
-            } else {
-                Filters.populateLanguageDropdown(allRepos);
-                const filters = Filters.getCurrentFilters();
-                const filtered = Filters.applyAll(allRepos, filters);
-                renderGraph(filtered);
-            }
-        });
-
-        addedReposList.appendChild(chip);
-    }
 
     // --- Render Graph + Update UI ---
     function renderGraph(repos) {
